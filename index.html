@@ -101,6 +101,9 @@ button:disabled{cursor:default;opacity:.65}
   }
 
   function track(session, connections) {
+    const input = document.createElement('canvas');
+    const pixels = input.getContext('2d');
+    if (!pixels) throw new Error('Could not create the pose input canvas.');
     let lastTime = -1;
     let nextSample = 0;
     let lastSeen = -Infinity;
@@ -111,18 +114,25 @@ button:disabled{cursor:default;opacity:.65}
             video.videoWidth && video.currentTime !== lastTime) {
           nextSample = now + 66;
           lastTime = video.currentTime;
-          const result = session.detector.detectForVideo(video, now);
-          if (draw(result.landmarks[0], connections)) lastSeen = now;
-          else canvas.hidden = true;
-          if (lastSeen === now) canvas.hidden = false;
+          // Upload a regular canvas texture instead of the live camera video texture.
+          if (input.width !== video.videoWidth) input.width = video.videoWidth;
+          if (input.height !== video.videoHeight) input.height = video.videoHeight;
+          pixels.drawImage(video, 0, 0, input.width, input.height);
+          const result = session.detector.detectForVideo(input, now);
+          canvas.hidden = !draw(result.landmarks?.[0], connections);
+          if (!canvas.hidden) lastSeen = now;
         }
         if (now - lastSeen > 400) canvas.hidden = true;
         report(now - lastSeen <= 400
           ? 'Body detected. Tracking on this device.'
           : 'Searching for a body. Step back until your head and feet fit in the frame.');
         session.frame = requestAnimationFrame(frame);
-      } catch {
-        stop('Body tracking stopped after a processing error. Enable camera to retry.');
+      } catch (error) {
+        console.warn('Pose Landmarker processing failed.', error);
+        canvas.hidden = true;
+        close(session.detector);
+        session.detector = null;
+        report('Camera preview only. Body tracking stopped. Turn the camera off and on to retry.');
       }
     }
     session.frame = requestAnimationFrame(frame);
@@ -181,6 +191,7 @@ button:disabled{cursor:default;opacity:.65}
       const files = await FilesetResolver.forVisionTasks(runtime + '/wasm');
       if (current !== session) return;
       const detector = await PoseLandmarker.createFromOptions(files, {
+        canvas: document.createElement('canvas'),
         baseOptions: { modelAssetPath: model, delegate: 'CPU' },
         runningMode: 'VIDEO',
         numPoses: 1
