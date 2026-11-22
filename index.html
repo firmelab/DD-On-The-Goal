@@ -43,6 +43,7 @@ button:disabled{cursor:default;opacity:.65}
   const status = document.getElementById('cameraStatus');
   const coaching = document.getElementById('coachingCue');
   let current = null;
+  let practice = null;
 
   function report(message) {
     if (status.textContent !== message) status.textContent = message;
@@ -118,6 +119,7 @@ button:disabled{cursor:default;opacity:.65}
     function giveCue(drill, now, message) {
       if (now - lastCue < 5000) return;
       lastCue = now;
+      if (practice) practice.cues++;
       coaching.textContent = message;
       coaching.hidden = false;
       drill.speak(message);
@@ -155,6 +157,7 @@ button:disabled{cursor:default;opacity:.65}
       const right = rightAnkle.y - rightHip.y;
       const scale = Math.max(left, right);
       if (scale < 0.12) return;
+      if (practice) practice.samples++;
       const aspect = video.videoWidth / video.videoHeight;
 
       if (drill.exercise === 'traffic') {
@@ -206,6 +209,10 @@ button:disabled{cursor:default;opacity:.65}
       candidate = foot;
       if (frames < 2) return;
       armed = false;
+      if (practice && previousFoot) {
+        practice.pairs++;
+        if (foot !== previousFoot) practice.alternated++;
+      }
       if (foot === previousFoot) giveCue(drill, now, 'Try alternating feet.');
       previousFoot = foot;
     }
@@ -324,13 +331,46 @@ button:disabled{cursor:default;opacity:.65}
   disable.addEventListener('click', () => stop());
   window.cameraOff = () => stop();
   window.practiceCameraActive = () => Boolean(current?.stream && video.readyState >= 2);
+  window.beginPracticeRecap = () => {
+    practice = { samples: 0, pairs: 0, alternated: 0, cues: 0 };
+  };
+  window.finishPracticeRecap = exercise => {
+    const summary = practice;
+    practice = null;
+    if (!summary || summary.samples < 15) return '';
+    if (exercise === 'taps') {
+      if (summary.pairs < 3) return 'Next round, keep both feet in frame for more alternation feedback.';
+      return 'You switched feet on ' + summary.alternated + ' of ' + summary.pairs +
+        ' detected foot-to-foot transitions. Next round, aim for a steady left-right rhythm.';
+    }
+    if (exercise === 'traffic') {
+      return summary.cues
+        ? 'Next round, listen for red and bring your body and the ball to a stop.'
+        : 'Next round, focus on a controlled stop with your sole whenever you hear red.';
+    }
+    return summary.cues
+      ? 'Next round, use smaller steps as you turn around each marker.'
+      : 'Next round, keep your steps short and the ball close through each turn.';
+  };
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && current) stop('Camera turned off when you left the tab.');
   });
 })();
 </script>
 <script>
-(function(){'use strict';var coachingRound=0,active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}if(started&&!paused)return;started=true;paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)};window.pause=function(){if(!started){status('Press Start first.');return}paused=!paused;coachReset();status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(!active||!started){status('Press Start first.');return}var id=active;resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.');say('Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});
+(function(){'use strict';var countdown=null,coachingRound=0,active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearTimeout(countdown);countdown=null;coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}
+  if((started&&!paused)||countdown!==null)return;
+  if(!started&&window.practiceCameraActive()){
+    status('Get in position. Starting in 5 seconds.');
+    say('Get in position. Starting in five seconds.');
+    countdown=setTimeout(function(){countdown=null;beginDrill(id)},5000);
+    return;
+  }
+  beginDrill(id)
+};function beginDrill(id){
+  if(!started)window.beginPracticeRecap();
+  started=true;
+paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)}window.pause=function(){if(countdown!==null){resetTimer();status('Countdown canceled. Press Start when ready.');say('Countdown canceled.');return}if(!started){status('Press Start first.');return}paused=!paused;coachReset();status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(countdown!==null){resetTimer();status('Countdown canceled. Press Start when ready.');say('Countdown canceled.');return}if(!active||!started){status('Press Start first.');return}var id=active;var recap=window.finishPracticeRecap(id);resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.'+(recap?' '+recap:''));say(recap||'Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});
   var explanations = [
     'On red, stop the ball with the sole of your foot.',
     'Small touches keep the ball close so you can change direction.',
