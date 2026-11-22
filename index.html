@@ -1,6 +1,11 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DD On The Goal V1.2</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>DD On The Goal V2.0</title><style>
 :root{font-family:system-ui,-apple-system,sans-serif;background:#0d241d;color:#f4fff7}*{box-sizing:border-box}body{margin:0}.wrap{max-width:850px;margin:auto;padding:18px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #37634d;padding:12px 0}h1{font-size:clamp(30px,6vw,50px);margin:14px 0}h2{margin:8px 0 12px}.muted{color:#b5d1c1}.panel{background:#193c2d;border:1px solid #36644b;border-radius:20px;padding:20px;margin:16px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tile{background:#24513b;border-radius:16px;padding:18px}.btn,button{display:inline-block;background:#f0c65b;color:#15291d;text-decoration:none;font-weight:800;padding:13px 16px;border:0;border-radius:12px;cursor:pointer;font-size:15px;min-height:46px}.btn.secondary,button.secondary{background:#315f49;color:white}.actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}.screen{display:none;scroll-margin-top:12px}#home{display:block}body:has(.screen:target) #home{display:none} .screen:target{display:block} .big{font-size:50px;font-weight:900;font-variant-numeric:tabular-nums}.cue{font-size:25px;font-weight:800;margin:15px 0;min-height:64px}.lamp{width:55px;height:55px;border-radius:50%;background:#34463d;display:inline-block;margin:5px;border:3px solid #587563}.lamp.green.on{background:#29d464}.lamp.yellow.on{background:#ffce3c}.lamp.red.on{background:#f04444}video{width:100%;max-height:350px;background:#07150f;border-radius:14px} .small{font-size:13px}.stat{font-size:27px;font-weight:900} .notice{color:#ffdd8d} .question button{display:block;margin:8px 0;width:100%;text-align:left}.question{margin:12px 0}.hidden{display:none!important}@media(max-width:460px){.grid{grid-template-columns:1fr}.wrap{padding:12px}.panel{padding:16px}}
-</style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V1.2</span></header>
+
+.camera-stage{position:relative;height:clamp(200px,60vw,350px);background:#07150f;border-radius:14px;overflow:hidden}
+.camera-stage video,.camera-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
+.camera-stage canvas{pointer-events:none}
+button:disabled{cursor:default;opacity:.65}
+</style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V2.0</span></header>
 <section id="home"><div class="panel"><div class="muted">HOME TRAINING ACADEMY</div><h1>Train anywhere.<br>Grow every day.</h1><p>Choose an exercise. Use a safe, clear space and have an adult supervise young players.</p><a class="btn" href="#traffic">Start Traffic Lights →</a></div><div class="grid"><div class="tile">⭐ <span id="points" class="stat">0</span><div class="muted">Practice points</div></div><div class="tile">🏆 <span id="sessions" class="stat">0</span><div class="muted">Completed sessions</div></div></div><h2>Choose your training</h2><div class="grid">
 <div class="tile"><h2>🚦 Traffic Lights</h2><p>Small touches, walk, stop with sole.</p><a class="btn" href="#traffic">Open exercise →</a></div>
 <div class="tile"><h2>👟 Toe Taps</h2><p>Alternate feet on the ball.</p><a class="btn" href="#taps">Open exercise →</a></div>
@@ -10,7 +15,203 @@
 <section id="taps" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>👟 Toe Taps</h2><p>Alternate feet on top of a stationary ball. Keep your balance. Manually count successful touches.</p><div class="big" id="tapsClock">01:00</div><div class="cue">Touches: <span id="tapCount">0</span></div><div class="actions"><button onclick="tap()">+ One touch</button><button class="secondary" onclick="start('taps')">▶ Start</button><button class="secondary" onclick="pause()">Pause / Resume</button><button onclick="finish()">Finish & Save</button></div><p id="tapsStatus" class="notice" aria-live="polite"></p></div></section>
 <section id="cones" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🔶 Cone Dribbling</h2><p>Set three soft markers in a safe space. Weave around them using small touches. Look up when safe.</p><div class="cue">🔶 &nbsp; ⚽ &nbsp; 🔶 &nbsp; 🔶</div><div class="big" id="conesClock">01:00</div><div class="actions"><button onclick="start('cones')">▶ Start</button><button class="secondary" onclick="pause()">Pause / Resume</button><button onclick="finish()">Finish & Save</button></div><p id="conesStatus" class="notice" aria-live="polite"></p></div></section>
 <section id="iq" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🧠 Soccer IQ</h2><p>Tap the correct answer. Each correct answer earns points.</p><div id="quiz"><div class="question"><strong>On RED, what do you do?</strong><button onclick="answer(this,true)">Stop ball with your sole</button><button onclick="answer(this,false)">Kick ball away</button></div><div class="question"><strong>For close dribbling, use:</strong><button onclick="answer(this,true)">Small touches</button><button onclick="answer(this,false)">Huge kicks</button></div><div class="question"><strong>When the space is unsafe:</strong><button onclick="answer(this,true)">Stop and clear it</button><button onclick="answer(this,false)">Run faster</button></div><div class="question"><strong>When dribbling, you should:</strong><button onclick="answer(this,true)">Look up when safe</button><button onclick="answer(this,false)">Keep eyes closed</button></div></div><p id="iqStatus" class="notice" aria-live="polite">Answer the four questions.</p><button onclick="finishQuiz()">Finish quiz & Save</button></div></section>
-<div class="panel"><h2>📷 Optional practice camera</h2><p class="small muted">Preview only. No video is saved, uploaded, or analyzed. Requires HTTPS or localhost and browser permission. iPhone Files/ChatGPT previews may block it.</p><video id="camera" autoplay muted playsinline></video><div class="actions"><button onclick="cameraOn()">Enable camera</button><button class="secondary" onclick="cameraOff()">Turn camera off</button></div><p id="cameraStatus" class="small notice"></p></div><footer class="small muted">DD On The Goal V1.2 · Local training prototype · Adult supervision recommended</footer></div>
+<section class="panel" aria-labelledby="cameraHeading">
+  <h2 id="cameraHeading">📷 Optional practice camera</h2>
+  <p class="muted">Enable the camera to see a live skeleton overlay. Keep your head and feet in frame. All exercises work with the camera off.</p>
+  <div class="camera-stage">
+    <video id="camera" autoplay muted playsinline aria-label="Mirrored camera preview"></video>
+    <canvas id="skeleton" aria-hidden="true" hidden></canvas>
+  </div>
+  <div class="actions">
+    <button type="button" id="cameraEnable">Enable camera</button>
+    <button type="button" class="secondary" id="cameraDisable" disabled>Turn camera off</button>
+  </div>
+  <p id="cameraStatus" class="notice" role="status">Camera off.</p>
+  <p class="small muted">Your browser downloads the tracking software and model when you enable the camera and grant access. Camera frames and pose landmarks stay in memory on this device. The app does not record or upload them, and it never requests microphone access.</p>
+</section><footer class="small muted">DD On The Goal V2.0 · Local training prototype · Adult supervision recommended</footer></div>
 <script>
-(function(){'use strict';var active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,stream=null,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}if(started&&!paused)return;started=true;paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)};window.pause=function(){if(!started){status('Press Start first.');return}paused=!paused;status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(!active||!started){status('Press Start first.');return}var id=active;resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.');say('Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});by('iqStatus').textContent=correct+' correct out of '+answered};window.finishQuiz=function(){if(answered<4){by('iqStatus').textContent='Answer all four questions first.';return}progress.points+=correct*15;progress.sessions++;save();by('iqStatus').textContent='Saved! '+correct+' / 4 correct. +'+(correct*15)+' points.';say('Quiz complete. Great work.')};window.cameraOn=async function(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){by('cameraStatus').textContent='Camera unavailable in this preview. Publish to an HTTPS website and open in Safari.';return}try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});by('camera').srcObject=stream;by('cameraStatus').textContent='Live preview on. Nothing is recorded.'}catch(e){by('cameraStatus').textContent='Camera unavailable: '+e.name+'. Check browser permissions.'}};window.cameraOff=function(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}by('camera').srcObject=null};window.addEventListener('hashchange',change);window.addEventListener('pagehide',window.cameraOff);render();change()})();
+(() => {
+  'use strict';
+
+  const runtime = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304';
+  const model = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  const video = document.getElementById('camera');
+  const canvas = document.getElementById('skeleton');
+  const context = canvas.getContext('2d');
+  const enable = document.getElementById('cameraEnable');
+  const disable = document.getElementById('cameraDisable');
+  const status = document.getElementById('cameraStatus');
+  let current = null;
+
+  function report(message) {
+    if (status.textContent !== message) status.textContent = message;
+  }
+
+  function close(detector) {
+    try { detector?.close(); } catch (error) {
+      console.warn('Could not release pose detector resources.', error.name);
+    }
+  }
+
+  function stop(message = 'Camera off.') {
+    const session = current;
+    current = null;
+    if (session) {
+      clearTimeout(session.timeout);
+      cancelAnimationFrame(session.frame);
+      session.stream?.getTracks().forEach(track => track.stop());
+      close(session.detector);
+    }
+    video.srcObject = null;
+    canvas.hidden = true;
+    context?.clearRect(0, 0, canvas.width, canvas.height);
+    enable.disabled = false;
+    disable.disabled = true;
+    report(message);
+  }
+
+  function draw(points, connections) {
+    if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
+    if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
+    const { width, height } = canvas;
+    context.clearRect(0, 0, width, height);
+    const visible = point => point && point.visibility >= 0.55 &&
+      point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+    if (!points?.some(visible)) return false;
+
+    const size = Math.max(2, width / 175);
+    context.lineCap = 'round';
+    context.lineWidth = size;
+    context.strokeStyle = '#64ffd0';
+    context.fillStyle = '#ffe18c';
+    context.beginPath();
+    for (const { start, end } of connections) {
+      const a = points[start], b = points[end];
+      if (!visible(a) || !visible(b)) continue;
+      context.moveTo(a.x * width, a.y * height);
+      context.lineTo(b.x * width, b.y * height);
+    }
+    context.stroke();
+    for (const point of points.filter(visible)) {
+      context.beginPath();
+      context.arc(point.x * width, point.y * height, size, 0, 2 * Math.PI);
+      context.fill();
+    }
+    return true;
+  }
+
+  function track(session, connections) {
+    let lastTime = -1;
+    let nextSample = 0;
+    let lastSeen = -Infinity;
+    function frame(now) {
+      if (current !== session) return;
+      try {
+        if (now >= nextSample && video.readyState >= 2 &&
+            video.videoWidth && video.currentTime !== lastTime) {
+          nextSample = now + 66;
+          lastTime = video.currentTime;
+          const result = session.detector.detectForVideo(video, now);
+          if (draw(result.landmarks[0], connections)) lastSeen = now;
+          else canvas.hidden = true;
+          if (lastSeen === now) canvas.hidden = false;
+        }
+        if (now - lastSeen > 400) canvas.hidden = true;
+        report(now - lastSeen <= 400
+          ? 'Body detected. Tracking on this device.'
+          : 'Searching for a body. Step back until your head and feet fit in the frame.');
+        session.frame = requestAnimationFrame(frame);
+      } catch {
+        stop('Body tracking stopped after a processing error. Enable camera to retry.');
+      }
+    }
+    session.frame = requestAnimationFrame(frame);
+  }
+
+  const cameraErrors = {
+    NotAllowedError: 'Camera access was blocked. Allow camera access in your browser settings and try again.',
+    NotFoundError: 'No camera was found. Connect a camera and try again.',
+    NotReadableError: 'The camera could not start. Close other apps using it and try again.',
+    OverconstrainedError: 'The camera could not meet the requested settings. Try another camera.',
+    SecurityError: 'Camera access is blocked here. Open the HTTPS page directly in your browser.',
+    AbortError: 'The camera stopped while starting. Enable camera to retry.'
+  };
+
+  async function start() {
+    if (current) return;
+    if (location.protocol === 'file:' || !window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      report('Camera unavailable here. Open the app directly in a browser over HTTPS or localhost.');
+      return;
+    }
+    if (!context || !window.WebAssembly) {
+      report('Body tracking is unsupported in this browser. Try a current browser.');
+      return;
+    }
+
+    const session = {};
+    current = session;
+    enable.disabled = true;
+    disable.disabled = false;
+    report('Waiting for camera permission…');
+    let stage = 'camera';
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+      if (current !== session) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      session.stream = stream;
+      stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
+        if (current === session) stop('Camera disconnected or permission was revoked. Enable camera to retry.');
+      }));
+      video.srcObject = stream;
+      session.timeout = setTimeout(() => {
+        if (current === session) stop('Camera or body tracking took too long to start. Check your connection and try again.');
+      }, 30000);
+      stage = 'preview';
+      await video.play();
+      if (current !== session) return;
+      stage = 'tracking';
+      report('Loading body tracking…');
+      const { FilesetResolver, PoseLandmarker } = await import(runtime + '/vision_bundle.mjs');
+      if (current !== session) return;
+      const files = await FilesetResolver.forVisionTasks(runtime + '/wasm');
+      if (current !== session) return;
+      const detector = await PoseLandmarker.createFromOptions(files, {
+        baseOptions: { modelAssetPath: model, delegate: 'CPU' },
+        runningMode: 'VIDEO',
+        numPoses: 1
+      });
+      if (current !== session) {
+        close(detector);
+        return;
+      }
+      clearTimeout(session.timeout);
+      session.detector = detector;
+      track(session, PoseLandmarker.POSE_CONNECTIONS);
+    } catch (error) {
+      if (current !== session) return;
+      if (stage === 'tracking') {
+        stop('Body tracking could not load. Check your connection and enable camera again. If it still fails, reload or try a current browser.');
+      } else if (stage === 'preview') {
+        stop('The camera preview could not play. Enable camera to retry.');
+      } else {
+        stop(cameraErrors[error.name] || 'Camera could not start. Check browser permissions and try again.');
+      }
+    }
+  }
+
+  enable.addEventListener('click', start);
+  disable.addEventListener('click', () => stop());
+  window.cameraOff = () => stop();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && current) stop('Camera turned off when you left the tab.');
+  });
+})();
+</script>
+<script>
+(function(){'use strict';var active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}if(started&&!paused)return;started=true;paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)};window.pause=function(){if(!started){status('Press Start first.');return}paused=!paused;status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(!active||!started){status('Press Start first.');return}var id=active;resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.');say('Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});by('iqStatus').textContent=correct+' correct out of '+answered};window.finishQuiz=function(){if(answered<4){by('iqStatus').textContent='Answer all four questions first.';return}progress.points+=correct*15;progress.sessions++;save();by('iqStatus').textContent='Saved! '+correct+' / 4 correct. +'+(correct*15)+' points.';say('Quiz complete. Great work.')};window.addEventListener('hashchange',change);window.addEventListener('pagehide',window.cameraOff);render();change()})();
 </script></body></html>
