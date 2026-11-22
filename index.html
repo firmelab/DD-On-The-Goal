@@ -14,7 +14,7 @@ button:disabled{cursor:default;opacity:.65}
 <section id="traffic" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🚦 Traffic Lights</h2><p>GREEN: small touches. YELLOW: walk with ball. RED: stop with sole.</p><div><span id="green" class="lamp green"></span><span id="yellow" class="lamp yellow"></span><span id="red" class="lamp red on"></span></div><div class="cue" id="trafficCue">RED — Stop with your sole</div><div class="big" id="trafficClock">01:00</div><div class="actions"><button onclick="start('traffic')">▶ Start</button><button class="secondary" onclick="pause()">Pause / Resume</button><button class="secondary" onclick="cue()">Next light</button><button onclick="finish()">Finish & Save</button></div><p id="trafficStatus" class="notice" aria-live="polite"></p></div></section>
 <section id="taps" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>👟 Toe Taps</h2><p>Alternate feet on top of a stationary ball. Keep your balance. Manually count successful touches. With the camera on, listen for an alternating-feet cue.</p><div class="big" id="tapsClock">01:00</div><div class="cue">Touches: <span id="tapCount">0</span></div><div class="actions"><button onclick="tap()">+ One touch</button><button class="secondary" onclick="start('taps')">▶ Start</button><button class="secondary" onclick="pause()">Pause / Resume</button><button onclick="finish()">Finish & Save</button></div><p id="tapsStatus" class="notice" aria-live="polite"></p></div></section>
 <section id="cones" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🔶 Cone Dribbling</h2><p>Set three soft markers in a safe space. Weave around them using small touches. Look up when safe.</p><div class="cue">🔶 &nbsp; ⚽ &nbsp; 🔶 &nbsp; 🔶</div><div class="big" id="conesClock">01:00</div><div class="actions"><button onclick="start('cones')">▶ Start</button><button class="secondary" onclick="pause()">Pause / Resume</button><button onclick="finish()">Finish & Save</button></div><p id="conesStatus" class="notice" aria-live="polite"></p></div></section>
-<section id="iq" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🧠 Soccer IQ</h2><p>Tap the correct answer. Each correct answer earns points.</p><div id="quiz"><div class="question"><strong>On RED, what do you do?</strong><button onclick="answer(this,true)">Stop ball with your sole</button><button onclick="answer(this,false)">Kick ball away</button></div><div class="question"><strong>For close dribbling, use:</strong><button onclick="answer(this,true)">Small touches</button><button onclick="answer(this,false)">Huge kicks</button></div><div class="question"><strong>When the space is unsafe:</strong><button onclick="answer(this,true)">Stop and clear it</button><button onclick="answer(this,false)">Run faster</button></div><div class="question"><strong>When dribbling, you should:</strong><button onclick="answer(this,true)">Look up when safe</button><button onclick="answer(this,false)">Keep eyes closed</button></div></div><p id="iqStatus" class="notice" aria-live="polite">Answer the four questions.</p><button onclick="finishQuiz()">Finish quiz & Save</button></div></section>
+<section id="iq" class="screen"><a class="btn secondary" href="#home">← All exercises</a><div class="panel"><h2>🧠 Soccer IQ</h2><p>Tap the correct answer. Each correct answer earns points. With the practice camera on, you’ll also hear why each answer is correct.</p><div id="quiz"><div class="question"><strong>On RED, what do you do?</strong><button onclick="answer(this,true)">Stop ball with your sole</button><button onclick="answer(this,false)">Kick ball away</button></div><div class="question"><strong>For close dribbling, use:</strong><button onclick="answer(this,true)">Small touches</button><button onclick="answer(this,false)">Huge kicks</button></div><div class="question"><strong>When the space is unsafe:</strong><button onclick="answer(this,true)">Stop and clear it</button><button onclick="answer(this,false)">Run faster</button></div><div class="question"><strong>When dribbling, you should:</strong><button onclick="answer(this,true)">Look up when safe</button><button onclick="answer(this,false)">Keep eyes closed</button></div></div><p id="iqStatus" class="notice" aria-live="polite">Answer the four questions.</p><button onclick="finishQuiz()">Finish quiz & Save</button></div></section>
 <section class="panel" aria-labelledby="cameraHeading">
   <h2 id="cameraHeading">📷 Optional practice camera</h2>
   <p class="muted">Enable the camera to see a live skeleton overlay. Keep your head and feet in frame. All exercises work with the camera off.</p>
@@ -112,15 +112,26 @@ button:disabled{cursor:default;opacity:.65}
     let round, previousFoot, candidate, frames = 0, armed = false;
     let lastCue = -Infinity;
     let lastClear = -Infinity;
+    let anchor = null;
+    let wideSince = null;
+
+    function giveCue(drill, now, message) {
+      if (now - lastCue < 5000) return;
+      lastCue = now;
+      coaching.textContent = message;
+      coaching.hidden = false;
+      drill.speak(message);
+    }
 
     function coach(points, now) {
-      const drill = window.toeTapsCoaching();
+      const drill = window.practiceCoaching();
       if (drill.round !== round) {
         round = drill.round;
         previousFoot = candidate = null;
         frames = 0;
         armed = false;
         lastCue = lastClear = -Infinity;
+        anchor = wideSince = null;
       }
       coaching.hidden = round === null || now - lastCue >= 2500;
       if (round === null) return;
@@ -131,15 +142,53 @@ button:disabled{cursor:default;opacity:.65}
         armed = false;
         candidate = null;
         frames = 0;
+        anchor = wideSince = null;
         return;
       }
-      if (now - lastClear > 500) previousFoot = null;
+      if (now - lastClear > 500) {
+        previousFoot = null;
+        anchor = wideSince = null;
+      }
       lastClear = now;
       const [leftHip, rightHip, , , leftAnkle, rightAnkle] = legs;
       const left = leftAnkle.y - leftHip.y;
       const right = rightAnkle.y - rightHip.y;
       const scale = Math.max(left, right);
       if (scale < 0.12) return;
+      const aspect = video.videoWidth / video.videoHeight;
+
+      if (drill.exercise === 'traffic') {
+        if (drill.light !== 2) return;
+        const x = (leftHip.x + rightHip.x) / 2;
+        const y = (leftHip.y + rightHip.y) / 2;
+        if (!anchor) anchor = { x, y, time: now };
+        if (now - anchor.time < 700) {
+          anchor.x = x;
+          anchor.y = y;
+          return;
+        }
+        const movement = Math.hypot((x - anchor.x) * aspect, y - anchor.y);
+        frames = movement > scale * 0.24 ? frames + 1 : 0;
+        if (frames >= 3) {
+          giveCue(drill, now, 'Red light. Come to a stop.');
+          anchor = { x, y, time: now };
+          frames = 0;
+        }
+        return;
+      }
+
+      if (drill.exercise === 'cones') {
+        const separation = Math.hypot((leftAnkle.x - rightAnkle.x) * aspect,
+          leftAnkle.y - rightAnkle.y);
+        if (separation <= scale * 0.85) {
+          wideSince = null;
+          return;
+        }
+        if (wideSince === null) wideSince = now;
+        if (now - wideSince >= 450) giveCue(drill, now, 'Try smaller steps around the markers.');
+        return;
+      }
+
       const difference = (right - left) / scale;
       if (Math.abs(difference) < 0.05) {
         armed = true;
@@ -157,11 +206,7 @@ button:disabled{cursor:default;opacity:.65}
       candidate = foot;
       if (frames < 2) return;
       armed = false;
-      if (foot === previousFoot && now - lastCue >= 5000) {
-        lastCue = now;
-        coaching.hidden = false;
-        drill.speak('Try alternating feet.');
-      }
+      if (foot === previousFoot) giveCue(drill, now, 'Try alternating feet.');
       previousFoot = foot;
     }
     function frame(now) {
@@ -278,11 +323,23 @@ button:disabled{cursor:default;opacity:.65}
   enable.addEventListener('click', start);
   disable.addEventListener('click', () => stop());
   window.cameraOff = () => stop();
+  window.practiceCameraActive = () => Boolean(current?.stream && video.readyState >= 2);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && current) stop('Camera turned off when you left the tab.');
   });
 })();
 </script>
 <script>
-(function(){'use strict';var coachingRound=0,active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.toeTapsCoaching=function(){return {round:active==="taps"&&started&&!paused?coachingRound:null,speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}if(started&&!paused)return;started=true;paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)};window.pause=function(){if(!started){status('Press Start first.');return}paused=!paused;coachReset();status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(!active||!started){status('Press Start first.');return}var id=active;resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.');say('Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});by('iqStatus').textContent=correct+' correct out of '+answered};window.finishQuiz=function(){if(answered<4){by('iqStatus').textContent='Answer all four questions first.';return}progress.points+=correct*15;progress.sessions++;save();by('iqStatus').textContent='Saved! '+correct+' / 4 correct. +'+(correct*15)+' points.';say('Quiz complete. Great work.')};window.addEventListener('hashchange',change);window.addEventListener('pagehide',window.cameraOff);render();change()})();
+(function(){'use strict';var coachingRound=0,active=null,seconds=60,ticker=null,paused=false,started=false,touches=0,light=0,answered=0,correct=0;var cues=[['green','GREEN — Take small touches'],['yellow','YELLOW — Walk with the ball'],['red','RED — Stop with your sole']];function by(id){return document.getElementById(id)}function say(s){try{if('speechSynthesis'in window){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=.9;speechSynthesis.speak(u)}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}if(started&&!paused)return;started=true;paused=false;status('Training in progress');if(id==='traffic'){light=0;setLight();say(cues[0][1])}else say(id==='taps'?'Start toe taps. Alternate your feet.':'Start dribbling around the markers.');clearInterval(ticker);ticker=setInterval(function(){if(paused)return;seconds=Math.max(0,seconds-1);clock();if(active==='traffic'&&seconds>0&&seconds%8===0)window.cue();if(seconds===0)window.finish()},1000)};window.pause=function(){if(!started){status('Press Start first.');return}paused=!paused;coachReset();status(paused?'Paused':'Training in progress');say(paused?'Paused':'Keep going')};window.cue=function(){if(active!=='traffic')return;light=(light+1)%3;setLight();say(cues[light][1])};window.tap=function(){touches++;by('tapCount').textContent=touches};window.finish=function(){if(!active||!started){status('Press Start first.');return}var id=active;resetTimer();var earned=20+(id==='taps'?Math.min(touches,40):0);progress.points+=earned;progress.sessions++;save();status('Saved! +'+earned+' practice points.');say('Great work. Session complete.')};window.answer=function(button,isCorrect){var group=button.parentElement;if(group.dataset.done)return;group.dataset.done='yes';answered++;if(isCorrect)correct++;button.style.background=isCorrect?'#7fe3a0':'#ef9b91';Array.from(group.querySelectorAll('button')).forEach(function(b){b.disabled=true});
+  var explanations = [
+    'On red, stop the ball with the sole of your foot.',
+    'Small touches keep the ball close so you can change direction.',
+    'If the space is unsafe, stop and clear it before you continue.',
+    'Look up when it is safe so you can see where you are going.'
+  ];
+  var index = Array.from(by('quiz').querySelectorAll('.question')).indexOf(group);
+  var explanation = explanations[index];
+  by('iqStatus').textContent = correct+' correct out of '+answered+(explanation?' · '+explanation:'');
+  if(explanation&&window.practiceCameraActive())say((isCorrect?'Correct. ':'Try this. ')+explanation)
+};window.finishQuiz=function(){if(answered<4){by('iqStatus').textContent='Answer all four questions first.';return}progress.points+=correct*15;progress.sessions++;save();by('iqStatus').textContent='Saved! '+correct+' / 4 correct. +'+(correct*15)+' points.';say('Quiz complete. Great work.')};window.addEventListener('hashchange',change);window.addEventListener('pagehide',window.cameraOff);render();change()})();
 </script></body></html>
