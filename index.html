@@ -5,6 +5,67 @@
 .camera-stage video,.camera-stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1)}
 .camera-stage canvas{pointer-events:none}
 button:disabled{cursor:default;opacity:.65}
+:root {
+  color-scheme: dark;
+  font-family: "Avenir Next", system-ui, sans-serif;
+  background: #09070d;
+  color: #fbf7ff;
+  accent-color: #c490ff;
+}
+body { min-height: 100vh; isolation: isolate; }
+body::before, body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  background: conic-gradient(#e9e6ef 0 25%, #08060c 0 50%, #e9e6ef 0 75%, #08060c 0) 0 0 / 64px 64px;
+  opacity: .22;
+  -webkit-mask-image: linear-gradient(145deg, #000, transparent 76%);
+  mask-image: linear-gradient(145deg, #000, transparent 76%);
+}
+body::after {
+  background: radial-gradient(ellipse at 82% 5%, #6d24a875, transparent 55%),
+              linear-gradient(180deg, transparent 35%, #09070d);
+}
+header {
+  gap: 12px;
+  border-bottom: 1px solid #a76dea;
+  padding: 16px 0;
+  letter-spacing: .09em;
+}
+header span { white-space: nowrap; font-family: ui-monospace, monospace; font-size: .82rem; }
+h1 { letter-spacing: -.055em; line-height: 1.02; }
+h2 { letter-spacing: -.025em; }
+.muted { color: #d5c5e5; }
+.panel, .tile {
+  border: 1px solid #694687;
+  border-radius: 8px 22px 8px 8px;
+  box-shadow: inset 0 1px #ffffff12, 0 10px 24px #0005;
+}
+.panel { background: linear-gradient(135deg, #2e1246, #140c20 75%); }
+.tile { background: linear-gradient(145deg, #241135, #100b17); }
+.btn, button {
+  background: #d5a5ff;
+  color: #1d092d;
+  border: 1px solid #e7ccff;
+  border-radius: 6px 13px 6px 6px;
+}
+.btn.secondary, button.secondary {
+  background: #251235;
+  color: #fbf7ff;
+  border-color: #9865c8;
+}
+.btn:hover, button:not(:disabled):hover { filter: brightness(1.14); }
+.btn:focus-visible, button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.big, .stat { font-family: ui-monospace, monospace; color: #e5c6ff; }
+.big { text-shadow: 0 0 20px #ab5aff55; }
+.notice { color: #f0d7ff; }
+.lamp { border-color: #916cab; background: #22152e; }
+.camera-stage { background: #060409; border: 1px solid #8053a9; }
+.camera-stage video { background: #060409; }
 </style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V2.0</span></header>
 <section id="home"><div class="panel"><div class="muted">HOME TRAINING ACADEMY</div><h1>Train anywhere.<br>Grow every day.</h1><p>Choose an exercise. Use a safe, clear space and have an adult supervise young players.</p><a class="btn" href="#traffic">Start Traffic Lights →</a></div><div class="grid"><div class="tile">⭐ <span id="points" class="stat">0</span><div class="muted">Practice points</div></div><div class="tile">🏆 <span id="sessions" class="stat">0</span><div class="muted">Completed sessions</div></div></div><h2>Choose your training</h2><div class="grid">
 <div class="tile"><h2>🚦 Traffic Lights</h2><p>Small touches, walk, stop with sole.</p><a class="btn" href="#traffic">Open exercise →</a></div>
