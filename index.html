@@ -132,6 +132,46 @@ section[aria-labelledby="cameraHeading"] {
 }
 #cameraEnable { background: var(--mint); color: #112b1e; border-color: #d1ffdf; }
 #cameraStatus { color: #d0f7da; }
+
+.move-guide { margin: 0 0 18px; border: 1px solid #548565; border-radius: 8px; background: #0e1f18; }
+.move-guide summary { padding: 12px 14px; font-weight: 800; color: #c4f9d4; cursor: pointer; }
+.move-guide summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.move-guide-body { display: grid; grid-template-columns: minmax(140px, 180px) 1fr; gap: 12px; padding: 0 14px 14px; align-items: center; }
+.move-guide ol { padding-left: 1.45em; margin: 8px 0; }
+.move-guide li + li { margin-top: .35em; }
+.toe-demo {
+  --demo-time: 3s;
+  position: relative;
+  width: 144px;
+  height: 152px;
+  justify-self: center;
+  border-bottom: 2px solid #70bb92;
+  background: radial-gradient(ellipse at bottom, #24513b, transparent 75%);
+}
+.toe-demo.is-slow { --demo-time: 5.5s; }
+.toe-demo span { position: absolute; }
+.demo-head { left: 58px; top: 5px; width: 28px; height: 28px; border: 2px solid #adf3c6; border-radius: 50%; }
+.demo-shirt { left: 52px; top: 36px; width: 40px; height: 52px; border: 2px solid #c490ff; border-radius: 13px 13px 8px 8px; background: #381d56; }
+.demo-limb {
+  top: 83px;
+  width: 8px;
+  height: 51px;
+  background: #9af0bc;
+  border-radius: 6px;
+  transform-origin: center top;
+  animation: demo-tap var(--demo-time) infinite;
+}
+.demo-limb span { bottom: -6px; left: -7px; width: 22px; height: 16px; border-radius: 5px; background: #d5a5ff; color: #160c20; text-align: center; font: 800 11px/16px system-ui; }
+.demo-right { left: 54px; --lean: -28deg; }
+.demo-left { left: 82px; --lean: 28deg; animation-delay: calc(var(--demo-time) / -2); }
+.demo-ball { left: 57px; bottom: -2px; font-size: 26px; line-height: 1; }
+@keyframes demo-tap {
+  0%, 42%, 100% { transform: rotate(0) scaleY(1); }
+  18%, 25% { transform: rotate(var(--lean)) scaleY(.82); }
+}
+#toeDemoSlow[aria-pressed="true"] { border-color: var(--mint); color: var(--mint); }
+@media (max-width: 560px) { .move-guide-body { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .demo-limb { animation: none; } }
 </style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V2.0</span></header>
 <section id="home"><div class="panel"><div class="muted">HOME TRAINING ACADEMY</div><h1>Train anywhere.<br>Grow every day.</h1><p>Choose an exercise. Use a safe, clear space and have an adult supervise young players.</p><a class="btn" href="#traffic">Start Traffic Lights →</a></div><div class="grid"><div class="tile">⭐ <span id="points" class="stat">0</span><div class="muted">Practice points</div></div><div class="tile">🏆 <span id="sessions" class="stat">0</span><div class="muted">Completed sessions</div></div></div><h2>Choose your training</h2><div class="grid">
 <div class="tile"><h2>🚦 Traffic Lights</h2><p>Small touches, walk, stop with sole.</p><a class="btn" href="#traffic">Open exercise →</a></div>
@@ -145,6 +185,29 @@ section[aria-labelledby="cameraHeading"] {
 <section class="panel" aria-labelledby="cameraHeading">
   <h2 id="cameraHeading">📷 Optional practice camera</h2>
   <p class="muted">Enable the camera to see a live skeleton overlay. Keep your head and feet in frame. All exercises work with the camera off.</p>
+<details id="toeGuide" class="move-guide" hidden open>
+  <summary>Watch the move · Toe Taps</summary>
+  <div class="move-guide-body">
+    <div id="toeDemo" class="toe-demo" aria-hidden="true">
+      <span class="demo-head"></span>
+      <span class="demo-shirt"></span>
+      <span class="demo-limb demo-right"><span>R</span></span>
+      <span class="demo-limb demo-left"><span>L</span></span>
+      <span class="demo-ball">⚽</span>
+    </div>
+    <div>
+      <ol>
+        <li>Tap the top of the ball lightly with your right foot.</li>
+        <li>Put your right foot back down.</li>
+        <li>Tap with your left foot, put it down, and repeat.</li>
+      </ol>
+      <div class="actions">
+        <button type="button" id="toeDemoSlow" class="secondary" aria-pressed="false">Slow motion</button>
+        <button type="button" id="toeDemoTry">Try it</button>
+      </div>
+    </div>
+  </div>
+</details>
   <div class="camera-stage">
     <video id="camera" autoplay muted playsinline aria-label="Mirrored camera preview"></video>
     <canvas id="skeleton" aria-hidden="true" hidden></canvas>
@@ -170,6 +233,9 @@ section[aria-labelledby="cameraHeading"] {
   const status = document.getElementById('cameraStatus');
   const coaching = document.getElementById('coachingCue');
   const framing = document.getElementById('framingStatus');
+  const toeGuide = document.getElementById('toeGuide');
+  const toeDemo = document.getElementById('toeDemo');
+  const toeDemoSlow = document.getElementById('toeDemoSlow');
   let current = null;
   let practice = null;
 
@@ -196,6 +262,7 @@ section[aria-labelledby="cameraHeading"] {
     canvas.hidden = true;
     coaching.hidden = true;
     framing.hidden = true;
+    toeGuide.hidden = true;
     context?.clearRect(0, 0, canvas.width, canvas.height);
     enable.disabled = false;
     disable.disabled = true;
@@ -507,6 +574,10 @@ section[aria-labelledby="cameraHeading"] {
       stage = 'preview';
       await video.play();
       if (current !== session) return;
+      if (location.hash === '#taps') {
+        toeGuide.hidden = false;
+        toeGuide.open = window.practiceSetup().enabled;
+      }
       stage = 'tracking';
       report('Loading body tracking…');
       const { FilesetResolver, PoseLandmarker } = await import(runtime + '/vision_bundle.mjs');
@@ -540,6 +611,15 @@ section[aria-labelledby="cameraHeading"] {
 
   enable.addEventListener('click', start);
   disable.addEventListener('click', () => stop());
+  toeDemoSlow.addEventListener('click', () => {
+    const slow = toeDemoSlow.getAttribute('aria-pressed') !== 'true';
+    toeDemoSlow.setAttribute('aria-pressed', String(slow));
+    toeDemo.classList.toggle('is-slow', slow);
+  });
+  document.getElementById('toeDemoTry').addEventListener('click', () => {
+    toeGuide.open = false;
+    window.start('taps');
+  });
   window.cameraOff = () => stop();
   window.practiceCameraActive = () => Boolean(current?.stream && video.readyState >= 2);
   window.beginPracticeRecap = () => {
@@ -582,7 +662,7 @@ section[aria-labelledby="cameraHeading"] {
   speechSynthesis.speak(u)
 }}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearTimeout(countdown);countdown=null;coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true;by("framingStatus").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};window.practiceSetup=function(){return {enabled:Boolean(active&&!started&&countdown===null),speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}
   if((started&&!paused)||countdown!==null)return;
-  if(!started&&window.practiceCameraActive()){
+  if(!started&&window.practiceCameraActive()){if(id==="taps")by("toeGuide").open=false;
     by("framingStatus").hidden=true;status('Get in position. Starting in 5 seconds.');
     say('Get in position. Starting in five seconds.');
     countdown=setTimeout(function(){countdown=null;beginDrill(id)},5000);
