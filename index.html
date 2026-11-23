@@ -153,7 +153,7 @@ section[aria-labelledby="cameraHeading"] {
     <button type="button" id="cameraEnable">Enable camera</button>
     <button type="button" class="secondary" id="cameraDisable" disabled>Turn camera off</button>
   </div>
-  <p id="coachingCue" class="notice" role="status" hidden>Try alternating feet.</p><p id="cameraStatus" class="notice" role="status">Camera off.</p>
+  <p id="coachingCue" class="notice" role="status" hidden>Try alternating feet.</p><p id="framingStatus" class="notice" role="status" hidden></p><p id="cameraStatus" class="notice" role="status">Camera off.</p>
   <p class="small muted">Your browser downloads the tracking software and model when you enable the camera and grant access. Camera frames and pose landmarks stay in memory on this device. The app does not record or upload them, and it never requests microphone access.</p>
 </section><footer class="small muted">DD On The Goal V2.0 · Local training prototype · Adult supervision recommended</footer></div>
 <script>
@@ -169,6 +169,7 @@ section[aria-labelledby="cameraHeading"] {
   const disable = document.getElementById('cameraDisable');
   const status = document.getElementById('cameraStatus');
   const coaching = document.getElementById('coachingCue');
+  const framing = document.getElementById('framingStatus');
   let current = null;
   let practice = null;
 
@@ -194,6 +195,7 @@ section[aria-labelledby="cameraHeading"] {
     video.srcObject = null;
     canvas.hidden = true;
     coaching.hidden = true;
+    framing.hidden = true;
     context?.clearRect(0, 0, canvas.width, canvas.height);
     enable.disabled = false;
     disable.disabled = true;
@@ -242,6 +244,54 @@ section[aria-labelledby="cameraHeading"] {
     let lastClear = -Infinity;
     let anchor = null;
     let wideSince = null;
+    let displayed = [];
+    let lastOverlayTime = -Infinity;
+    let framingCandidate = null;
+    let framingSince = 0;
+    let framingShown = null;
+
+    function smooth(points, now) {
+      if (!points || now - lastOverlayTime > 300) displayed = [];
+      if (!points) return [];
+      const blend = 1 - Math.exp(-(now - lastOverlayTime) / 70);
+      lastOverlayTime = now;
+      displayed = points.map((point, index) => {
+        const previous = displayed[index];
+        if (!(point?.visibility >= 0.55)) return null;
+        if (!previous) return point;
+        return {
+          ...point,
+          x: previous.x + blend * (point.x - previous.x),
+          y: previous.y + blend * (point.y - previous.y)
+        };
+      });
+      return displayed;
+    }
+
+    function checkFraming(points, now) {
+      const setup = window.practiceSetup();
+      if (!setup.enabled) {
+        framing.hidden = true;
+        framingCandidate = framingShown = null;
+        return;
+      }
+      const inside = point => point?.visibility >= 0.7 &&
+        point.x > 0.03 && point.x < 0.97 && point.y > 0.03 && point.y < 0.97;
+      const upper = [0, 11, 12, 23, 24].every(index => inside(points?.[index]));
+      const lower = [25, 26, 27, 28, 31, 32].every(index => inside(points?.[index]));
+      const message = upper && lower ? 'You’re in frame.' : upper
+        ? 'Take one step back so both feet are visible.'
+        : 'Face the camera with your head and feet in view.';
+      if (message !== framingCandidate) {
+        framingCandidate = message;
+        framingSince = now;
+      }
+      if (now - framingSince < 550 || message === framingShown) return;
+      framingShown = message;
+      framing.textContent = message;
+      framing.hidden = false;
+      if (upper) setup.speak(message);
+    }
 
     function giveCue(drill, now, message) {
       if (now - lastCue < 5000) return;
@@ -356,11 +406,16 @@ section[aria-labelledby="cameraHeading"] {
           pixels.drawImage(video, 0, 0, input.width, input.height);
           const result = session.detector.detectForVideo(input, now);
           const points = result.landmarks?.[0];
-          canvas.hidden = !draw(points, connections);
+          canvas.hidden = !draw(smooth(points, now), connections);
+          checkFraming(points, now);
           coach(points, now);
           if (!canvas.hidden) lastSeen = now;
         }
         if (now - lastSeen > 400) canvas.hidden = true;
+        if (framingShown && now - nextSample > 500) {
+          framing.hidden = true;
+          framingShown = framingCandidate = null;
+        }
         report(now - lastSeen <= 400
           ? 'Body detected. Tracking on this device.'
           : 'Searching for a body. Step back until your head and feet fit in the frame.');
@@ -369,6 +424,7 @@ section[aria-labelledby="cameraHeading"] {
         console.warn('Pose Landmarker processing failed.', error);
         canvas.hidden = true;
         coaching.hidden = true;
+        framing.hidden = true;
         close(session.detector);
         session.detector = null;
         report('Camera preview only. Body tracking stopped. Turn the camera off and on to retry.');
@@ -496,10 +552,10 @@ section[aria-labelledby="cameraHeading"] {
   u.pitch=.95;
   u.volume=.85;
   speechSynthesis.speak(u)
-}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearTimeout(countdown);countdown=null;coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}
+}}catch(e){}}function read(){try{return JSON.parse(localStorage.getItem('ddgoal_v12'))||{points:0,sessions:0}}catch(e){return {points:0,sessions:0}}}var progress=read();function render(){by('points').textContent=progress.points;by('sessions').textContent=progress.sessions}function save(){try{localStorage.setItem('ddgoal_v12',JSON.stringify(progress))}catch(e){}render()}function resetTimer(){clearTimeout(countdown);countdown=null;coachReset();clearInterval(ticker);ticker=null;seconds=60;started=false;paused=false}function coachReset(){coachingRound++;by("coachingCue").hidden=true}window.practiceCoaching=function(){return {round:active&&started&&!paused?coachingRound:null,exercise:active,light:light,speak:say}};window.practiceSetup=function(){return {enabled:Boolean(active&&!started&&countdown===null),speak:say}};function clock(){if(active)by(active+'Clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')}function status(s){if(active)by(active+'Status').textContent=s}function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1]}window.start=function(id){if(active!==id){active=id;resetTimer()}
   if((started&&!paused)||countdown!==null)return;
   if(!started&&window.practiceCameraActive()){
-    status('Get in position. Starting in 5 seconds.');
+    by("framingStatus").hidden=true;status('Get in position. Starting in 5 seconds.');
     say('Get in position. Starting in five seconds.');
     countdown=setTimeout(function(){countdown=null;beginDrill(id)},5000);
     return;
