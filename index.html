@@ -172,6 +172,26 @@ section[aria-labelledby="cameraHeading"] {
 #toeDemoSlow[aria-pressed="true"] { border-color: var(--mint); color: var(--mint); }
 @media (max-width: 560px) { .move-guide-body { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .demo-limb { animation: none; } }
+
+body.camera-view-expanded { overflow: hidden; }
+section.camera-expanded {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: #060409;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.camera-expanded h2, .camera-expanded .muted, .camera-expanded .move-guide { display: none; }
+.camera-expanded .camera-stage { flex: 1 1 auto; height: auto; min-height: 120px; }
+.camera-expanded .actions { margin-bottom: 4px; }
+.camera-expanded .notice { margin: 4px 0; }
 </style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V2.0</span></header>
 <section id="home"><div class="panel"><div class="muted">HOME TRAINING ACADEMY</div><h1>Train anywhere.<br>Grow every day.</h1><p>Choose an exercise. Use a safe, clear space and have an adult supervise young players.</p><a class="btn" href="#traffic">Start Traffic Lights →</a></div><div class="grid"><div class="tile">⭐ <span id="points" class="stat">0</span><div class="muted">Practice points</div></div><div class="tile">🏆 <span id="sessions" class="stat">0</span><div class="muted">Completed sessions</div></div></div><h2>Choose your training</h2><div class="grid">
 <div class="tile"><h2>🚦 Traffic Lights</h2><p>Small touches, walk, stop with sole.</p><a class="btn" href="#traffic">Open exercise →</a></div>
@@ -214,6 +234,7 @@ section[aria-labelledby="cameraHeading"] {
   </div>
   <div class="actions">
     <button type="button" id="cameraEnable">Enable camera</button>
+    <button type="button" class="secondary" id="cameraExpand" aria-pressed="false" disabled>Full-screen camera</button>
     <button type="button" class="secondary" id="cameraDisable" disabled>Turn camera off</button>
   </div>
   <p id="coachingCue" class="notice" role="status" hidden>Try alternating feet.</p><p id="framingStatus" class="notice" role="status" hidden></p><p id="cameraStatus" class="notice" role="status">Camera off.</p>
@@ -236,8 +257,17 @@ section[aria-labelledby="cameraHeading"] {
   const toeGuide = document.getElementById('toeGuide');
   const toeDemo = document.getElementById('toeDemo');
   const toeDemoSlow = document.getElementById('toeDemoSlow');
+  const cameraPanel = document.getElementById('cameraHeading').parentElement;
+  const expand = document.getElementById('cameraExpand');
   let current = null;
   let practice = null;
+
+  function setExpanded(expanded) {
+    cameraPanel.classList.toggle('camera-expanded', expanded);
+    document.body.classList.toggle('camera-view-expanded', expanded);
+    expand.setAttribute('aria-pressed', String(expanded));
+    expand.textContent = expanded ? 'Exit full screen' : 'Full-screen camera';
+  }
 
   function report(message) {
     if (status.textContent !== message) status.textContent = message;
@@ -263,6 +293,8 @@ section[aria-labelledby="cameraHeading"] {
     coaching.hidden = true;
     framing.hidden = true;
     toeGuide.hidden = true;
+    if (expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
+    expand.disabled = true;
     context?.clearRect(0, 0, canvas.width, canvas.height);
     enable.disabled = false;
     disable.disabled = true;
@@ -311,6 +343,8 @@ section[aria-labelledby="cameraHeading"] {
     let lastClear = -Infinity;
     let anchor = null;
     let wideSince = null;
+    let alternatingStreak = 0;
+    let redFeedback = false;
     let displayed = [];
     let lastOverlayTime = -Infinity;
     let framingCandidate = null;
@@ -369,13 +403,14 @@ section[aria-labelledby="cameraHeading"] {
       if (upper) setup.speak(message);
     }
 
-    function giveCue(drill, now, message) {
-      if (now - lastCue < 5000) return;
+    function giveCue(drill, now, message, positive = false) {
+      if (now - lastCue < 5000) return false;
       lastCue = now;
-      if (practice) practice.cues++;
+      if (practice && !positive) practice.cues++;
       coaching.textContent = message;
       coaching.hidden = false;
       drill.speak(message);
+      return true;
     }
 
     function coach(points, now) {
@@ -388,6 +423,8 @@ section[aria-labelledby="cameraHeading"] {
         armed = false;
         lastCue = lastClear = -Infinity;
         anchor = wideSince = null;
+        alternatingStreak = 0;
+        redFeedback = false;
       }
       coaching.hidden = round === null || now - lastCue >= 2500;
       if (round === null) return;
@@ -411,6 +448,7 @@ section[aria-labelledby="cameraHeading"] {
         candidate = null;
         frames = 0;
         anchor = wideSince = null;
+        alternatingStreak = 0;
         return;
       }
       lostFeetSince = null;
@@ -422,6 +460,7 @@ section[aria-labelledby="cameraHeading"] {
       if (now - lastClear > 500) {
         previousFoot = null;
         anchor = wideSince = null;
+        alternatingStreak = 0;
       }
       lastClear = now;
       const [leftHip, rightHip, , , leftAnkle, rightAnkle] = legs;
@@ -448,6 +487,9 @@ section[aria-labelledby="cameraHeading"] {
           giveCue(drill, now, 'Red light. Come to a stop.');
           anchor = { x, y, time: now };
           frames = 0;
+        }
+        if (!redFeedback && now - anchor.time >= 1800 && movement < scale * 0.10) {
+          redFeedback = giveCue(drill, now, 'Nice and steady on red.', true);
         }
         return;
       }
@@ -485,7 +527,15 @@ section[aria-labelledby="cameraHeading"] {
         practice.pairs++;
         if (foot !== previousFoot) practice.alternated++;
       }
-      if (foot === previousFoot) giveCue(drill, now, 'Try alternating feet.');
+      if (foot === previousFoot) {
+        alternatingStreak = 0;
+        giveCue(drill, now, 'Try alternating feet.');
+      } else if (previousFoot) {
+        alternatingStreak++;
+        if (alternatingStreak >= 3 && giveCue(drill, now, 'Nice rhythm. Keep alternating.', true)) {
+          alternatingStreak = 0;
+        }
+      }
       previousFoot = foot;
     }
     function frame(now) {
@@ -574,6 +624,7 @@ section[aria-labelledby="cameraHeading"] {
       stage = 'preview';
       await video.play();
       if (current !== session) return;
+      expand.disabled = false;
       if (location.hash === '#taps') {
         toeGuide.hidden = false;
         toeGuide.open = window.practiceSetup().enabled;
@@ -611,6 +662,12 @@ section[aria-labelledby="cameraHeading"] {
 
   enable.addEventListener('click', start);
   disable.addEventListener('click', () => stop());
+  expand.addEventListener('click', () => {
+    setExpanded(expand.getAttribute('aria-pressed') !== 'true');
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
+  });
   toeDemoSlow.addEventListener('click', () => {
     const slow = toeDemoSlow.getAttribute('aria-pressed') !== 'true';
     toeDemoSlow.setAttribute('aria-pressed', String(slow));
