@@ -169,7 +169,7 @@ section[aria-labelledby="cameraHeading"] {
   0%, 42%, 100% { transform: rotate(0) scaleY(1); }
   18%, 25% { transform: rotate(var(--lean)) scaleY(.82); }
 }
-#toeDemoSlow[aria-pressed="true"] { border-color: var(--mint); color: var(--mint); }
+#moveDemoSlow[aria-pressed="true"] { border-color: var(--mint); color: var(--mint); }
 @media (max-width: 560px) { .move-guide-body { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .demo-limb { animation: none; } }
 
@@ -188,7 +188,7 @@ section.camera-expanded {
   flex-direction: column;
   overflow: auto;
 }
-.camera-expanded h2, .camera-expanded .muted, .camera-expanded .move-guide { display: none; }
+.camera-expanded h2, .camera-expanded .muted { display: none; }
 .camera-expanded .camera-stage { flex: 1 1 auto; height: auto; min-height: 120px; }
 .camera-expanded .actions { margin-bottom: 4px; }
 .camera-expanded .notice { margin: 4px 0; }
@@ -210,6 +210,50 @@ section.camera-expanded {
   .camera-expanded .camera-stage { grid-row: 1 / span 8; height: calc(100dvh - 28px); }
   .camera-expanded > :not(.camera-stage) { grid-column: 2; }
 }
+
+.demo-signal, .demo-markers, .demo-teammate { display: none; }
+.toe-demo[data-lesson="traffic"] { --demo-time: 5s; }
+.toe-demo[data-lesson="traffic"].is-slow { --demo-time: 8s; }
+[data-lesson="traffic"] .demo-left { animation: none; }
+[data-lesson="traffic"] .demo-right { animation: demo-sole-stop var(--demo-time) infinite; }
+[data-lesson="traffic"] .demo-ball { animation: demo-ball-stop var(--demo-time) infinite; }
+[data-lesson="traffic"] .demo-signal {
+  display: grid; gap: 4px; right: 1px; top: 8px; padding: 5px;
+  border: 1px solid #86b69b; border-radius: 6px; background: #101c17;
+}
+.demo-signal i { width: 9px; height: 9px; border-radius: 50%; background: #394540; }
+.demo-signal i:nth-child(1) { animation: demo-green var(--demo-time) infinite; }
+.demo-signal i:nth-child(2) { animation: demo-yellow var(--demo-time) infinite; }
+.demo-signal i:nth-child(3) { animation: demo-red var(--demo-time) infinite; }
+@keyframes demo-green { 0%,28% { background: #4ef59a; } 29%,100% { background: #394540; } }
+@keyframes demo-yellow { 0%,28%,61%,100% { background: #394540; } 29%,60% { background: #ffd75e; } }
+@keyframes demo-red { 0%,60% { background: #394540; } 61%,100% { background: #ff6969; } }
+@keyframes demo-ball-stop { 0% { transform: translateX(-32px); } 28% { transform: translateX(-12px); } 61%,100% { transform: translateX(0); } }
+@keyframes demo-sole-stop { 0%,58%,100% { transform: rotate(0); } 66%,92% { transform: rotate(-28deg) scaleY(.82); } }
+
+[data-lesson="cones"] .demo-head, [data-lesson="cones"] .demo-shirt,
+[data-lesson="cones"] .demo-limb, [data-lesson="iq"] .demo-limb { display: none; }
+[data-lesson="cones"] .demo-markers { display: grid; left: 64px; top: 19px; gap: 24px; }
+.demo-markers i { width: 16px; height: 17px; background: #ffbc68; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+[data-lesson="cones"] .demo-ball { left: 59px; bottom: 2px; animation: demo-weave var(--demo-time) linear infinite; }
+@keyframes demo-weave {
+  0% { transform: translate(-24px, 0); }
+  25% { transform: translate(-30px, -33px); }
+  50% { transform: translate(29px, -64px); }
+  75% { transform: translate(-28px, -105px); }
+  100% { transform: translate(19px, -124px); }
+}
+[data-lesson="iq"] .demo-head { left: 8px; top: 64px; }
+[data-lesson="iq"] .demo-shirt { left: 3px; top: 93px; height: 34px; }
+[data-lesson="iq"] .demo-teammate { display: block; right: 8px; top: 17px; width: 28px; height: 28px; border: 2px solid #c490ff; border-radius: 50%; background: #381d56; }
+[data-lesson="iq"] .demo-ball { left: 31px; bottom: 5px; animation: demo-pass var(--demo-time) ease-in-out infinite; }
+@keyframes demo-pass { 0%,30% { transform: translate(0,0); } 82%,100% { transform: translate(55px,-98px); } }
+.camera-expanded .move-guide { flex-shrink: 0; margin: 8px 0 0; }
+.camera-expanded .move-guide[open] { max-height: 40dvh; overflow: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .toe-demo[data-lesson] *, .toe-demo[data-lesson] .demo-limb { animation: none; }
+  [data-lesson="traffic"] .demo-signal i:last-child { background: #ff6969; }
+}
 </style></head><body><div class="wrap"><header><strong>⚽ DD ON THE GOAL</strong><span class="muted">FREE V2.0</span></header>
 <section id="home"><div class="panel"><div class="muted">HOME TRAINING ACADEMY</div><h1>Train anywhere.<br>Grow every day.</h1><p>Choose an exercise. Use a safe, clear space and have an adult supervise young players.</p><a class="btn" href="#traffic">Start Traffic Lights →</a></div><div class="grid"><div class="tile">⭐ <span id="points" class="stat">0</span><div class="muted">Practice points</div></div><div class="tile">🏆 <span id="sessions" class="stat">0</span><div class="muted">Completed sessions</div></div></div><h2>Choose your training</h2><div class="grid">
 <div class="tile"><h2>🚦 Traffic Lights</h2><p>Small touches, walk, stop with sole.</p><a class="btn" href="#traffic">Open exercise →</a></div>
@@ -223,25 +267,28 @@ section.camera-expanded {
 <section class="panel" aria-labelledby="cameraHeading">
   <h2 id="cameraHeading">📷 Optional practice camera</h2>
   <p class="muted">Enable the camera to see a live skeleton overlay. Keep your head and feet in frame. All exercises work with the camera off.</p>
-<details id="toeGuide" class="move-guide" hidden open>
-  <summary>Watch the move · Toe Taps</summary>
+<details id="moveGuide" class="move-guide" hidden open>
+  <summary id="moveGuideTitle">Watch the Move</summary>
   <div class="move-guide-body">
-    <div id="toeDemo" class="toe-demo" aria-hidden="true">
+    <div id="moveDemo" class="toe-demo" aria-hidden="true">
       <span class="demo-head"></span>
       <span class="demo-shirt"></span>
       <span class="demo-limb demo-right"><span>R</span></span>
       <span class="demo-limb demo-left"><span>L</span></span>
       <span class="demo-ball">⚽</span>
+      <span class="demo-signal"><i></i><i></i><i></i></span>
+      <span class="demo-markers"><i></i><i></i><i></i></span>
+      <span class="demo-teammate"></span>
     </div>
     <div>
       <ol>
-        <li>Tap the top of the ball lightly with your right foot.</li>
-        <li>Put your right foot back down.</li>
-        <li>Tap with your left foot, put it down, and repeat.</li>
+        <li id="moveStep1"></li>
+        <li id="moveStep2"></li>
+        <li id="moveStep3"></li>
       </ol>
       <div class="actions">
-        <button type="button" id="toeDemoSlow" class="secondary" aria-pressed="false">Slow motion</button>
-        <button type="button" id="toeDemoTry">Try it</button>
+        <button type="button" id="moveDemoSlow" class="secondary" aria-pressed="false">Slow motion</button>
+        <button type="button" id="moveDemoTry">Try it</button>
       </div>
     </div>
   </div>
@@ -287,9 +334,36 @@ section.camera-expanded {
   const status = document.getElementById('cameraStatus');
   const coaching = document.getElementById('coachingCue');
   const framing = document.getElementById('framingStatus');
-  const toeGuide = document.getElementById('toeGuide');
-  const toeDemo = document.getElementById('toeDemo');
-  const toeDemoSlow = document.getElementById('toeDemoSlow');
+  const moveGuide = document.getElementById('moveGuide');
+  const moveDemo = document.getElementById('moveDemo');
+  const moveDemoSlow = document.getElementById('moveDemoSlow');
+  const moveDemoTry = document.getElementById('moveDemoTry');
+  const moveGuideTitle = document.getElementById('moveGuideTitle');
+  const guideSteps = [1, 2, 3].map(number => document.getElementById('moveStep' + number));
+  const lessonGuides = {
+    traffic: {
+      title: 'Traffic Lights',
+      steps: ['Green: dribble with small touches.', 'Yellow: slow to a walk and keep the ball close.',
+        'Red: put your sole on the ball and come to a stop.']
+    },
+    taps: {
+      title: 'Toe Taps',
+      steps: ['Tap the top of the ball lightly with your right foot.', 'Put your right foot back down.',
+        'Tap with your left foot, put it down, and repeat.']
+    },
+    cones: {
+      title: 'Cone Dribbling',
+      steps: ['Start with the ball close to your feet.', 'Take short touches to weave around the markers.',
+        'Use small steps as you change direction.']
+    },
+    iq: {
+      title: 'Soccer IQ',
+      action: 'Go to quiz',
+      steps: ['Imagine a teammate moving into open space.', 'Look for a clear path between you and your teammate.',
+        'Use what you see to decide whether to pass or keep the ball.']
+    }
+  };
+  let guideLesson = null;
   const cameraPanel = document.getElementById('cameraHeading').parentElement;
   const expand = document.getElementById('cameraExpand');
   const streakDisplay = document.getElementById('tapStreak');
@@ -302,6 +376,20 @@ section.camera-expanded {
     document.body.classList.toggle('camera-view-expanded', expanded);
     expand.setAttribute('aria-pressed', String(expanded));
     expand.textContent = expanded ? 'Exit full screen' : 'Full-screen camera';
+    if (expanded) moveGuide.open = false;
+  }
+
+  function showLessonGuide() {
+    const lesson = location.hash.slice(1);
+    if (!Object.hasOwn(lessonGuides, lesson)) return;
+    const { title, steps, action = 'Try it' } = lessonGuides[lesson];
+    guideLesson = lesson;
+    moveGuideTitle.textContent = 'Watch the Move · ' + title;
+    moveDemo.setAttribute('data-lesson', lesson);
+    guideSteps.forEach((item, index) => { item.textContent = steps[index]; });
+    moveDemoTry.textContent = action;
+    moveGuide.hidden = false;
+    moveGuide.open = lesson === 'iq' || window.practiceSetup().enabled;
   }
 
   function report(message) {
@@ -327,7 +415,8 @@ section.camera-expanded {
     canvas.hidden = true;
     coaching.hidden = true;
     framing.hidden = true;
-    toeGuide.hidden = true;
+    moveGuide.hidden = true;
+    guideLesson = null;
     streakDisplay.hidden = true;
     if (expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
     expand.disabled = true;
@@ -671,9 +760,8 @@ section.camera-expanded {
       expand.disabled = false;
       if (location.hash === '#taps') {
         showStreak();
-        toeGuide.hidden = false;
-        toeGuide.open = window.practiceSetup().enabled;
       }
+      showLessonGuide();
       stage = 'tracking';
       report('Loading body tracking…');
       const { FilesetResolver, PoseLandmarker } = await import(runtime + '/vision_bundle.mjs');
@@ -713,14 +801,22 @@ section.camera-expanded {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
   });
-  toeDemoSlow.addEventListener('click', () => {
-    const slow = toeDemoSlow.getAttribute('aria-pressed') !== 'true';
-    toeDemoSlow.setAttribute('aria-pressed', String(slow));
-    toeDemo.classList.toggle('is-slow', slow);
+  moveDemoSlow.addEventListener('click', () => {
+    const slow = moveDemoSlow.getAttribute('aria-pressed') !== 'true';
+    moveDemoSlow.setAttribute('aria-pressed', String(slow));
+    moveDemo.classList.toggle('is-slow', slow);
   });
-  document.getElementById('toeDemoTry').addEventListener('click', () => {
-    toeGuide.open = false;
-    window.start('taps');
+  moveDemoTry.addEventListener('click', () => {
+    if (!guideLesson) return;
+    moveGuide.open = false;
+    if (guideLesson === 'iq') {
+      if (expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
+      const quiz = document.getElementById('quiz');
+      quiz.scrollIntoView({ block: 'start' });
+      quiz.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+      return;
+    }
+    window.start(guideLesson);
   });
   window.cameraOff = () => stop();
   window.practiceCameraActive = () => Boolean(current?.stream && video.readyState >= 2);
@@ -791,7 +887,7 @@ window.startCameraDrill=function(){if(active)window.start(active)};
 function status(s){if(active)by(active+'Status').textContent=s;syncCameraDrill()}
 function change(){resetTimer();active=null;window.cameraOff();var id=location.hash.slice(1);if(['traffic','taps','cones'].includes(id)){active=id;clock();status('Ready to train.');if(id==='traffic'){light=2;setLight()}}}function setLight(){coachReset();['green','yellow','red'].forEach(function(k,i){by(k).classList.toggle('on',i===light)});by('trafficCue').textContent=cues[light][1];syncCameraDrill()}window.start=function(id){if(active!==id){active=id;resetTimer()}
   if((started&&!paused)||countdown!==null)return;
-  if(!started&&window.practiceCameraActive()){if(id==="taps")by("toeGuide").open=false;
+  if(!started&&window.practiceCameraActive()){by("moveGuide").open=false;
     by("framingStatus").hidden=true;status('Get in position. Starting in 5 seconds.');
     say('Get in position. Starting in five seconds.');
     countdown=setTimeout(function(){countdown=null;beginDrill(id)},5000);
