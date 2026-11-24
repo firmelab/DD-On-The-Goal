@@ -379,9 +379,13 @@ section.camera-expanded {
     if (expanded) moveGuide.open = false;
   }
 
-  function showLessonGuide() {
+  function showLessonGuide(cameraOn) {
     const lesson = location.hash.slice(1);
-    if (!Object.hasOwn(lessonGuides, lesson)) return;
+    if (!Object.prototype.hasOwnProperty.call(lessonGuides, lesson)) {
+      guideLesson = null;
+      moveGuide.hidden = true;
+      return;
+    }
     const { title, steps, action = 'Try it' } = lessonGuides[lesson];
     guideLesson = lesson;
     moveGuideTitle.textContent = 'Watch the Move · ' + title;
@@ -389,7 +393,7 @@ section.camera-expanded {
     guideSteps.forEach((item, index) => { item.textContent = steps[index]; });
     moveDemoTry.textContent = action;
     moveGuide.hidden = false;
-    moveGuide.open = lesson === 'iq' || window.practiceSetup().enabled;
+    moveGuide.open = cameraOn && (lesson === 'iq' || window.practiceSetup().enabled);
   }
 
   function report(message) {
@@ -415,8 +419,7 @@ section.camera-expanded {
     canvas.hidden = true;
     coaching.hidden = true;
     framing.hidden = true;
-    moveGuide.hidden = true;
-    guideLesson = null;
+    showLessonGuide(false);
     streakDisplay.hidden = true;
     if (expand.getAttribute('aria-pressed') === 'true') setExpanded(false);
     expand.disabled = true;
@@ -761,7 +764,7 @@ section.camera-expanded {
       if (location.hash === '#taps') {
         showStreak();
       }
-      showLessonGuide();
+      showLessonGuide(true);
       stage = 'tracking';
       report('Loading body tracking…');
       const { FilesetResolver, PoseLandmarker } = await import(runtime + '/vision_bundle.mjs');
